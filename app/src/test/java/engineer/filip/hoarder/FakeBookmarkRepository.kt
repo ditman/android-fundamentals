@@ -40,4 +40,6 @@ class FakeBookmarkRepository : BookmarkRepository {
     }
 
     fun getBookmarkCount(): Int = 0 // TODO: return bookmarks.size
+
+    override val next = 0
 }

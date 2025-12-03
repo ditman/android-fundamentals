@@ -44,7 +44,6 @@ android {
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -64,6 +63,8 @@ dependencies {
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.androidx.compose.runtime)
+    implementation(libs.androidx.graphics.shapes)
+    implementation(libs.androidx.ui.graphics)
     kapt(libs.hilt.compiler)
 
     testImplementation(libs.junit)

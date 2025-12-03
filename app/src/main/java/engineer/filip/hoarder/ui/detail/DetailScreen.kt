@@ -1,11 +1,13 @@
 package engineer.filip.hoarder.ui.detail
 
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -23,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -104,6 +107,7 @@ fun DetailContent(
                 .padding(innerPadding)
                 .padding(16.dp)
         ) {
+            val context = LocalContext.current
             state.bookmark?.let { bookmark ->
                 Text(
                     text = bookmark.title,
@@ -116,8 +120,12 @@ fun DetailContent(
                 Text(
                     text = bookmark.url,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(bookmark.url))
+                        context.startActivity(intent)
+                    },
+                    )
                 // TODO Exercise 14: Add "Copy URL" button, format created date
 
                 Spacer(modifier = Modifier.height(16.dp))

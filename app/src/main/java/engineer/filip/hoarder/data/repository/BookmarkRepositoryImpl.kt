@@ -1,9 +1,11 @@
 package engineer.filip.hoarder.data.repository
 
+import android.content.SharedPreferences
+import androidx.core.content.edit
+import com.google.gson.Gson
 import engineer.filip.hoarder.data.model.Bookmark
+import engineer.filip.hoarder.data.model.toBookmarkList
 import engineer.filip.hoarder.ui.Hints
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -15,17 +17,36 @@ import javax.inject.Singleton
 @Singleton
 class BookmarkRepositoryImpl @Inject constructor(
     // TODO: Inject SharedPreferences here
+    private val preferences: SharedPreferences
 ) : BookmarkRepository {
+    private val BOOKMARKS_STORAGE_KEY = "bookmarks_key"
+
+    override var next: Int = 0
+        private set
 
     // TODO: Create Gson instance
+    private val gson = Gson()
 
     private val bookmarks = mutableListOf<Bookmark>()
 
     // TODO: Implement loadFromPrefs()
     // TODO: Implement saveToPrefs()
+    private fun saveToPrefs() {
+        preferences.edit {
+            putString(BOOKMARKS_STORAGE_KEY, gson.toJson(bookmarks)).apply()
+        }
+    }
+
+    private fun loadFromPrefs(): List<Bookmark> {
+        val json = preferences.getString(BOOKMARKS_STORAGE_KEY, null)
+        val prefsBookmarks = json.toBookmarkList()
+        bookmarks.clear()
+        bookmarks.addAll(prefsBookmarks)
+        return bookmarks.toList()
+    }
 
     override suspend fun getBookmarks(): List<Bookmark> {
-        return bookmarks.toList()
+        return loadFromPrefs()
     }
 
     override suspend fun getBookmarkById(id: String): Bookmark? {
@@ -34,8 +55,9 @@ class BookmarkRepositoryImpl @Inject constructor(
 
     override suspend fun addBookmark(bookmark: Bookmark) {
         bookmarks.add(bookmark)
+        next++;
         // TODO: Call saveToPrefs()
-        Unit
+        saveToPrefs()
     }
 
     override suspend fun updateBookmark(bookmark: Bookmark) {
@@ -43,18 +65,20 @@ class BookmarkRepositoryImpl @Inject constructor(
         if (index != -1) {
             bookmarks[index] = bookmark
             // TODO: Call saveToPrefs()
+            saveToPrefs()
         }
     }
 
     override suspend fun deleteBookmark(bookmarkId: String) {
         bookmarks.removeAll { it.id == bookmarkId }
         // TODO: Call saveToPrefs()
-        Unit
+        saveToPrefs()
     }
 
     override suspend fun clearAll() {
         bookmarks.clear()
         // TODO: Call saveToPrefs()
+        saveToPrefs()
     }
 
     // TODO: create companion object with private shared prefs key

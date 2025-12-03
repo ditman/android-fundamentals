@@ -14,4 +14,9 @@ interface BookmarkRepository {
     suspend fun updateBookmark(bookmark: Bookmark)
     suspend fun deleteBookmark(bookmarkId: String)
     suspend fun clearAll()
+
+    /**
+     * The index of the next bookmark, which increases when `addBookmark` is called.
+     */
+    val next: Int
 }
