@@ -1,5 +1,9 @@
 package engineer.filip.hoarder.ui.home
 
+import android.Manifest
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,8 +21,11 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddLocationAlt
 import androidx.compose.material.icons.filled.CollectionsBookmark
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.LocationOff
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -67,6 +74,28 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
 
+    // Anything related to the lifecycle needs to be here, not in the viewmodel
+    val locationPermissionsLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val fineLocationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
+        val coarseLocationGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
+
+        when {
+            fineLocationGranted -> {
+                viewModel.onAction(HomeAction.FineLocationPermissionGrant(true))
+            }
+
+            coarseLocationGranted -> {
+                viewModel.onAction(HomeAction.CoarseLocationPermissionGrant(true))
+            }
+
+            else -> {
+                // Bad user!
+            }
+        }
+    }
+
     // Observe one-time events for navigation
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -84,7 +113,15 @@ fun HomeScreen(
     }
 
     HomeContent(
-        state = uiState, onAction = viewModel::onAction
+        state = uiState, onAction = viewModel::onAction, onRequestPermissions = {
+            Log.d("HomeScreen", "Requested location permissions")
+            locationPermissionsLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        }
     )
 }
 
@@ -94,13 +131,29 @@ fun HomeScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeContent(
-    state: HomeUiState, onAction: (HomeAction) -> Unit, modifier: Modifier = Modifier
+    state: HomeUiState,
+    onAction: (HomeAction) -> Unit,
+    onRequestPermissions: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Scaffold(modifier = modifier.fillMaxSize(), topBar = {
         TopAppBar(
             title = { Text("Hoarder") },
             // TODO Exercise 11: Add ClearAll IconButton. See Hints.Exercise11
             actions = {
+                val locationIcon = when {
+                    state.hasCoarseLocationPermission -> Icons.Default.LocationOn
+                    state.hasFineLocationPermission -> Icons.Default.AddLocationAlt
+                    else -> Icons.Default.LocationOff
+                }
+                IconButton(
+                    onClick = onRequestPermissions
+                ) {
+                    Icon(
+                        imageVector = locationIcon,
+                        contentDescription = "Request Location permissions",
+                    )
+                }
                 IconButton(
                     onClick = {
                         onAction(
@@ -288,11 +341,11 @@ private fun EmptyStatePreview() {
 private fun BookmarkItemPreview() {
     BookmarkItem(
         bookmark = Bookmark(
-        id = "1",
-        title = "Kotlin Docs",
-        url = "https://kotlinlang.org",
-        notes = "Great documentation"
-    ), onClick = {}, onDeleteClick = {})
+            id = "1",
+            title = "Kotlin Docs",
+            url = "https://kotlinlang.org",
+            notes = "Great documentation"
+        ), onClick = {}, onDeleteClick = {})
 }
 
 @Preview(showBackground = true, showSystemUi = true)
@@ -305,7 +358,10 @@ private fun HomeContentPreview() {
                 Bookmark("2", "Kotlin", "https://kotlinlang.org", ""),
                 Bookmark("3", "Android", "https://developer.android.com", "Dev docs")
             )
-        ), onAction = {}, modifier = Modifier.padding(WindowInsets.safeDrawing.asPaddingValues())
+        ),
+        onAction = {},
+        onRequestPermissions = {},
+        modifier = Modifier.padding(WindowInsets.safeDrawing.asPaddingValues())
     )
 }
 
@@ -315,6 +371,7 @@ private fun HomeContentEmptyPreview() {
     HomeContent(
         state = HomeUiState(bookmarks = emptyList()),
         onAction = {},
+        onRequestPermissions = {},
         modifier = Modifier.padding(WindowInsets.safeDrawing.asPaddingValues())
     )
 }

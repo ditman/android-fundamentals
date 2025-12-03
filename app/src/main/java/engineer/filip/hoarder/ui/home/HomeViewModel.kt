@@ -41,6 +41,8 @@ data class HomeUiState(
     val error: String? = null,
     val counter: Int = 0,
     val searchQuery: String = "",
+    val hasCoarseLocationPermission: Boolean = false,
+    val hasFineLocationPermission: Boolean = false,
 
     // TODO Day 2 Exercise 13: Add val searchQuery: String = ""
 ) {
@@ -73,6 +75,9 @@ sealed interface HomeAction {
 
     // TODO Day 2 Exercise 13: Add data class SearchQueryChanged(val query: String) : HomeAction
     data class SearchQueryChanged(val query: String) : HomeAction
+
+    data class CoarseLocationPermissionGrant(val granted: Boolean) : HomeAction
+    data class FineLocationPermissionGrant(val granted: Boolean) : HomeAction
 
     @Suppress("unused")
     private val _hint11: Any get() = Hints.Exercise11
@@ -173,6 +178,21 @@ class HomeViewModel @Inject constructor(
             // TODO Exercise 11: Handle ClearAll
             is HomeAction.ClearAll -> clearAllBookmarks()
             // TODO Exercise 13: Handle SearchQueryChanged
+            is HomeAction.CoarseLocationPermissionGrant -> onLocationPermissionGranted(coarse = action.granted)
+            is HomeAction.FineLocationPermissionGrant -> onLocationPermissionGranted(fine = action.granted)
+        }
+    }
+
+    private fun onLocationPermissionGranted(coarse: Boolean? = null, fine: Boolean? = null) {
+        _uiState.update {
+            var newState = it
+            if (coarse != null) {
+                newState = newState.copy(hasCoarseLocationPermission = coarse)
+            }
+            if (fine != null) {
+                newState = newState.copy(hasFineLocationPermission = fine)
+            }
+            newState
         }
     }
 
