@@ -158,10 +158,10 @@ fun HomeContent(
 
 @Composable
 fun SearchInput(
-    modifier: Modifier = Modifier, searchQuery: String?, onAction: (HomeAction) -> Unit
+    modifier: Modifier = Modifier, searchQuery: String, onAction: (HomeAction) -> Unit
 ) {
     OutlinedTextField(
-        value = searchQuery ?: "",
+        value = searchQuery,
         label = { Text("Search") },
         onValueChange = { newValue ->
             onAction(HomeAction.SearchQueryChanged(newValue))

@@ -11,12 +11,14 @@ import engineer.filip.hoarder.data.model.Bookmark
 import engineer.filip.hoarder.data.repository.BookmarkRepository
 import engineer.filip.hoarder.ui.Hints
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -38,7 +40,7 @@ data class HomeUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val counter: Int = 0,
-    val searchQuery: String? = null,
+    val searchQuery: String = "",
 
     // TODO Day 2 Exercise 13: Add val searchQuery: String = ""
 ) {
@@ -109,6 +111,7 @@ class HomeViewModel @Inject constructor(
     val events: SharedFlow<HomeEvent> = _events.asSharedFlow()
 
     // TODO Exercise 13: Add search query flow for debounce
+    private val _searchQuery = MutableStateFlow("")
 
     init {
         loadBookmarks()
@@ -116,6 +119,24 @@ class HomeViewModel @Inject constructor(
         observeSharedContent()
 
         // TODO Exercise 13: Call observeSearch()
+        observeSearchQuery()
+    }
+
+    @OptIn(FlowPreview::class)
+    fun observeSearchQuery() {
+        viewModelScope.launch {
+            _searchQuery.debounce(timeoutMillis = 250).collect { searchQuery ->
+                val filteredBookmarks = repository.getBookmarks().filter { bookmark ->
+                    bookmark.title.contains(
+                        searchQuery,
+                        ignoreCase = true
+                    ) || bookmark.url.contains(searchQuery, ignoreCase = true)
+                }
+                _uiState.update {
+                    it.copy(bookmarks = filteredBookmarks)
+                }
+            }
+        }
     }
 
     // TODO Exercise 8: Implement observeSharedContent()
@@ -165,6 +186,7 @@ class HomeViewModel @Inject constructor(
         _uiState.update {
             it.copy(searchQuery = query)
         }
+        _searchQuery.update { query }
     }
 
     /**
