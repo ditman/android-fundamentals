@@ -9,6 +9,7 @@ import engineer.filip.hoarder.data.model.Bookmark
  */
 interface BookmarkRepository {
     suspend fun getBookmarks(): List<Bookmark>
+    suspend fun getBookmarks(filter: String): List<Bookmark>
     suspend fun getBookmarkById(id: String): Bookmark?
     suspend fun addBookmark(bookmark: Bookmark)
     suspend fun updateBookmark(bookmark: Bookmark)

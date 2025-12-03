@@ -49,6 +49,14 @@ class BookmarkRepositoryImpl @Inject constructor(
         return loadFromPrefs()
     }
 
+    override suspend fun getBookmarks(filter: String): List<Bookmark> {
+        return loadFromPrefs().filter { bookmark ->
+            bookmark.title.contains(filter) || bookmark.url.contains(
+                filter
+            )
+        }
+    }
+
     override suspend fun getBookmarkById(id: String): Bookmark? {
         return bookmarks.find { it.id == id }
     }

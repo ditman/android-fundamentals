@@ -126,12 +126,7 @@ class HomeViewModel @Inject constructor(
     fun observeSearchQuery() {
         viewModelScope.launch {
             _searchQuery.debounce(timeoutMillis = 250).collect { searchQuery ->
-                val filteredBookmarks = repository.getBookmarks().filter { bookmark ->
-                    bookmark.title.contains(
-                        searchQuery,
-                        ignoreCase = true
-                    ) || bookmark.url.contains(searchQuery, ignoreCase = true)
-                }
+                val filteredBookmarks = repository.getBookmarks(searchQuery)
                 _uiState.update {
                     it.copy(bookmarks = filteredBookmarks)
                 }
