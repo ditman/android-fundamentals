@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddLocationAlt
 import androidx.compose.material.icons.filled.CollectionsBookmark
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.LocationOff
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.Card
@@ -44,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -96,6 +98,18 @@ fun HomeScreen(
         }
     }
 
+    val onRequestPermissions = remember {
+        {
+            Log.d("HomeScreen", "Requested location permissions")
+            locationPermissionsLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        }
+    }
+
     // Observe one-time events for navigation
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -112,15 +126,13 @@ fun HomeScreen(
         }
     }
 
+    val context = LocalContext.current
     HomeContent(
-        state = uiState, onAction = viewModel::onAction, onRequestPermissions = {
-            Log.d("HomeScreen", "Requested location permissions")
-            locationPermissionsLauncher.launch(
-                arrayOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-                )
-            )
+        state = uiState,
+        onAction = viewModel::onAction,
+        onRequestPermissions = onRequestPermissions,
+        uploadBookmarks = {
+            viewModel.exportBookmarks(context)
         }
     )
 }
@@ -134,32 +146,53 @@ fun HomeContent(
     state: HomeUiState,
     onAction: (HomeAction) -> Unit,
     onRequestPermissions: () -> Unit,
+    uploadBookmarks: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val onFabClicked = remember {
+        {
+            onAction(
+                HomeAction.AddBookmark(
+                    Bookmark(
+                        id = UUID.randomUUID().toString(),
+                        title = "My random bookmark",
+                        url = "https://www.flutter.dev",
+                    )
+                )
+            )
+        }
+    }
+
+    val onClearClicked = remember {
+        {
+            onAction(
+                HomeAction.ClearAll
+            )
+        }
+    }
+
     Scaffold(modifier = modifier.fillMaxSize(), topBar = {
         TopAppBar(
             title = { Text("Hoarder") },
             // TODO Exercise 11: Add ClearAll IconButton. See Hints.Exercise11
             actions = {
+                IconButton(onClick = uploadBookmarks) {
+                    Icon(
+                        imageVector = Icons.Default.FileDownload, contentDescription = "Save stuff"
+                    )
+                }
                 val locationIcon = when {
                     state.hasCoarseLocationPermission -> Icons.Default.LocationOn
                     state.hasFineLocationPermission -> Icons.Default.AddLocationAlt
                     else -> Icons.Default.LocationOff
                 }
-                IconButton(
-                    onClick = onRequestPermissions
-                ) {
+                IconButton(onClick = onRequestPermissions) {
                     Icon(
                         imageVector = locationIcon,
                         contentDescription = "Request Location permissions",
                     )
                 }
-                IconButton(
-                    onClick = {
-                        onAction(
-                            HomeAction.ClearAll
-                        )
-                    }) {
+                IconButton(onClick = onClearClicked) {
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Delete",
@@ -167,18 +200,7 @@ fun HomeContent(
                 }
             })
     }, floatingActionButton = {
-        FloatingActionButton(
-            onClick = {
-                onAction(
-                    HomeAction.AddBookmark(
-                        Bookmark(
-                            id = UUID.randomUUID().toString(),
-                            title = "My random bookmark",
-                            url = "https://www.flutter.dev",
-                        )
-                    )
-                )
-            }) {
+        FloatingActionButton(onClick = onFabClicked) {
             Text(text = "#${state.counter}", fontSize = 16.sp)
         }
     }) { innerPadding ->
@@ -213,12 +235,9 @@ fun HomeContent(
 fun SearchInput(
     modifier: Modifier = Modifier, searchQuery: String, onAction: (HomeAction) -> Unit
 ) {
-    OutlinedTextField(
-        value = searchQuery,
-        label = { Text("Search") },
-        onValueChange = { newValue ->
-            onAction(HomeAction.SearchQueryChanged(newValue))
-        })
+    OutlinedTextField(value = searchQuery, label = { Text("Search") }, onValueChange = { newValue ->
+        onAction(HomeAction.SearchQueryChanged(newValue))
+    })
 }
 
 @Composable
@@ -233,11 +252,19 @@ fun BookmarkItems(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        items(items = bookmarks) { bookmark ->
+        items(items = bookmarks, key = { bookmark -> bookmark.id }) { bookmark ->
             BookmarkItem(
                 bookmark = bookmark,
-                onClick = { onAction(HomeAction.BookmarkClick(bookmark.id)) },
-                onDeleteClick = { onAction(HomeAction.DeleteBookmarkClick(bookmark.id)) })
+                onClick = remember(bookmark.id) { { onAction(HomeAction.BookmarkClick(bookmark.id)) } },
+                onDeleteClick = remember(bookmark.id) {
+                    {
+                        onAction(
+                            HomeAction.DeleteBookmarkClick(
+                                bookmark.id
+                            )
+                        )
+                    }
+                })
         }
     }
 }
@@ -361,6 +388,7 @@ private fun HomeContentPreview() {
         ),
         onAction = {},
         onRequestPermissions = {},
+        uploadBookmarks = {},
         modifier = Modifier.padding(WindowInsets.safeDrawing.asPaddingValues())
     )
 }
@@ -372,6 +400,7 @@ private fun HomeContentEmptyPreview() {
         state = HomeUiState(bookmarks = emptyList()),
         onAction = {},
         onRequestPermissions = {},
+        uploadBookmarks = {},
         modifier = Modifier.padding(WindowInsets.safeDrawing.asPaddingValues())
     )
 }

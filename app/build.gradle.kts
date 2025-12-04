@@ -22,12 +22,28 @@ android {
     }
 
     buildTypes {
+        debug {
+            isDebuggable = true
+            applicationIdSuffix = ".debug"
+        }
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+    }
+    flavorDimensions += "environment"
+    productFlavors {
+        create("dev") {
+            dimension = "environment"
+            applicationIdSuffix = ".dev"
+            buildConfigField("String", "API_URL", "\"https://dev.example.com\"")
+        }
+        create("prod") {
+            dimension = "environment"
+            buildConfigField("String", "API_URL", "\"https://prod.example.com\"")
         }
     }
     compileOptions {
@@ -66,6 +82,10 @@ dependencies {
     implementation(libs.androidx.graphics.shapes)
     implementation(libs.androidx.ui.graphics)
     kapt(libs.hilt.compiler)
+
+    androidTestImplementation("com.google.dagger:hilt-android-testing:2.57.2")
+    testAnnotationProcessor("com.google.dagger:hilt-compiler:2.57.2")
+    kaptAndroidTest("com.google.dagger:hilt-compiler:2.57.2")
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

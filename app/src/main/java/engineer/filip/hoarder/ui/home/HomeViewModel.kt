@@ -1,5 +1,6 @@
 package engineer.filip.hoarder.ui.home
 
+import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
@@ -10,7 +11,6 @@ import engineer.filip.hoarder.data.ShareHandler
 import engineer.filip.hoarder.data.model.Bookmark
 import engineer.filip.hoarder.data.repository.BookmarkRepository
 import engineer.filip.hoarder.ui.Hints
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.File
 import java.util.UUID
 import javax.inject.Inject
 
@@ -129,7 +130,7 @@ class HomeViewModel @Inject constructor(
 
     @OptIn(FlowPreview::class)
     fun observeSearchQuery() {
-        viewModelScope.launch {
+        viewModelScope.launch { // (Dispatchers.IO) {
             _searchQuery.debounce(timeoutMillis = 250).collect { searchQuery ->
                 val filteredBookmarks = repository.getBookmarks(searchQuery)
                 _uiState.update {
@@ -141,8 +142,8 @@ class HomeViewModel @Inject constructor(
 
     // TODO Exercise 8: Implement observeSharedContent()
     fun observeSharedContent() {
-        Log.d("HomeViewModel", "observeSharedContent")
-        viewModelScope.launch {
+//        Log.d("HomeViewModel", "observeSharedContent")
+        viewModelScope.launch { // (Dispatchers.IO) {
             shareHandler.pendingShare.filterNotNull().collect { bookmarkUrl ->
                 Log.d("HomeViewModel", "Got bookmark $bookmarkUrl")
                 // Create new bookmark
@@ -155,7 +156,7 @@ class HomeViewModel @Inject constructor(
                 shareHandler.consumeIntent()
             }
         }
-        viewModelScope.launch {
+        viewModelScope.launch { // (Dispatchers.IO) {
             shareHandler.deeplinkData.filterNotNull().collect { bookmarkId ->
                 Log.d("HomeViewModel", "Got deeplink $bookmarkId")
                 onBookmarkClick(bookmarkId)
@@ -208,14 +209,14 @@ class HomeViewModel @Inject constructor(
      * Clears all the bookmarks
      */
     private fun clearAllBookmarks() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch { // (Dispatchers.IO) {
             repository.clearAll()
             loadBookmarks()
         }
     }
 
     private fun loadBookmarks() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch { // (Dispatchers.IO) {
             _uiState.update { it.copy(isLoading = true) }
             try {
                 val bookmarks = repository.getBookmarks()
@@ -240,7 +241,7 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun addBookmark(bookmark: Bookmark) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch { // (Dispatchers.IO) {
             val count = uiState.value.bookmarks.size
             repository.addBookmark(bookmark.copy(title = bookmark.title + " ${repository.next}"))
             loadBookmarks()
@@ -248,22 +249,32 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun deleteBookmark(bookmarkId: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch { // (Dispatchers.IO) {
             repository.deleteBookmark(bookmarkId)
             loadBookmarks()
         }
     }
 
     private fun onBookmarkClick(bookmarkId: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch { // (Dispatchers.IO) {
             _events.emit(HomeEvent.NavigateToDetail(bookmarkId))
         }
     }
 
     private fun onDeleteBookmarkClick(bookmarkId: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch { // (Dispatchers.IO) {
             _events.emit(HomeEvent.NavigateToDeleteConfirmation(bookmarkId))
         }
+    }
+
+    // Very very bad
+    fun exportBookmarks(context: Context): String {
+        val file = File(context.cacheDir, "bookmarks.xml")
+        repeat(5000) { i ->
+            file.appendText("Bookmarks $i - ${System.currentTimeMillis()} \n")
+        }
+        Thread.sleep(2000)
+        return "Exported file with ${file.readText().length} bytes."
     }
 
     // TODO Exercise 11: Implement clearAll()

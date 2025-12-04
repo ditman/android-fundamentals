@@ -10,36 +10,54 @@ import engineer.filip.hoarder.data.repository.BookmarkRepository
  */
 class FakeBookmarkRepository : BookmarkRepository {
 
+    private val bookmarks = mutableListOf<Bookmark>()
+
     // TODO: Create in-memory storage
     var shouldThrowError = false
 
     override suspend fun getBookmarks(): List<Bookmark> {
         // TODO: Implement (check shouldThrowError)
-        return emptyList()
+        return bookmarks
+    }
+
+    override suspend fun getBookmarks(filter: String): List<Bookmark> {
+        // TODO("Not yet implemented")
+        return bookmarks.filter { bookmark ->
+            bookmark.title.contains(filter) || bookmark.url.contains(
+                filter
+            )
+        }
     }
 
     override suspend fun getBookmarkById(id: String): Bookmark? {
         // TODO: Implement
-        return null
+        return bookmarks.find { bookmark -> bookmark.id == id }
     }
 
     override suspend fun addBookmark(bookmark: Bookmark) {
         // TODO: Implement
+        bookmarks.add(bookmark)
     }
 
     override suspend fun updateBookmark(bookmark: Bookmark) {
         // TODO: Implement
+        val index = bookmarks.indexOf(bookmark)
+        bookmarks[index] = bookmark
     }
 
     override suspend fun deleteBookmark(bookmarkId: String) {
         // TODO: Implement
+        bookmarks.removeAll { bookmark -> bookmark.id == bookmarkId }
     }
 
     override suspend fun clearAll() {
         // TODO: Implement
+        bookmarks.clear()
     }
 
-    fun getBookmarkCount(): Int = 0 // TODO: return bookmarks.size
+    fun getBookmarkCount(): Int {
+        return bookmarks.size
+    }
 
     override val next = 0
 }

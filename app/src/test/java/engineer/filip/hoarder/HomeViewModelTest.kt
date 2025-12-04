@@ -4,13 +4,11 @@ import engineer.filip.hoarder.data.ShareHandler
 import engineer.filip.hoarder.data.model.Bookmark
 import engineer.filip.hoarder.ui.home.HomeAction
 import engineer.filip.hoarder.ui.home.HomeViewModel
+import junit.framework.TestCase.assertEquals
+import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -29,20 +27,36 @@ class HomeViewModelTest {
     private lateinit var repository: FakeBookmarkRepository
     private lateinit var viewModel: HomeViewModel
 
+    private lateinit var shareHandler: ShareHandler
+
     @Before
     fun setup() {
         repository = FakeBookmarkRepository()
-        viewModel = HomeViewModel(repository)
+        shareHandler = ShareHandler()
+        viewModel = HomeViewModel(repository, shareHandler)
     }
 
     @Test
     fun `initial state has empty bookmarks`() = runTest {
         // TODO: Implement
+        advanceUntilIdle()
+        val state = viewModel.uiState.value
+        assertTrue(state.bookmarks.isEmpty())
     }
 
     @Test
     fun `adding bookmark updates state`() = runTest {
         // TODO: Implement
+        // viewModel.onAction(HomeAction.LoadBookmarks)
+        val bookmark = Bookmark(
+            id = "1",
+            title = "Title",
+            url = "https://flutter.dev",
+        )
+        viewModel.onAction(HomeAction.AddBookmark(bookmark))
+        val state = viewModel.uiState.value
+        val bookmarks = state.bookmarks
+        assertEquals(1, bookmarks.size)
     }
 
     @Test

@@ -44,6 +44,8 @@ class MainActivity : ComponentActivity() {
         // TODO: Handle share intent
         handleShareIntent(intent)
 
+        Log.d("MainActivity", "BuildConfig.API_URL: ${BuildConfig.API_URL}")
+
         setContent {
             HoarderTheme {
                 val navController = rememberNavController()
